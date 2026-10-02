@@ -1,0 +1,7 @@
+{
+  "air_raid_siren": {
+    "sounds": [
+      { "name": "sirenblock:air_raid_siren", "stream": true }
+    ]
+  }
+}

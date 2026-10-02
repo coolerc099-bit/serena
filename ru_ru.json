@@ -1,0 +1,23 @@
+{
+  "block.sirenblock.siren": "Сирена",
+  "screen.sirenblock.siren": "СИРЕНА",
+  "sirenblock.radius": "Радиус",
+  "sirenblock.inner": "Мин. дистанция",
+  "sirenblock.volume": "Громкость",
+  "sirenblock.url": "URL",
+  "sirenblock.radius_label": "Радиус:",
+  "sirenblock.inner_label": "Мин. дистанция:",
+  "sirenblock.volume_label": "Громкость:",
+  "sirenblock.url_label": "Ссылка:",
+  "sirenblock.sound_label": "Звук: %s",
+  "sirenblock.enable": "ВКЛЮЧИТЬ",
+  "sirenblock.disable": "ВЫКЛЮЧИТЬ",
+  "sirenblock.curve": "Затухание: %s",
+  "sirenblock.loop": "Повтор: %s",
+  "sirenblock.redstone": "Редстоун: %s",
+  "sirenblock.apply": "СОХРАНИТЬ",
+  "sirenblock.cancel": "ОТМЕНА",
+  "sirenblock.import_local": "ПАПКА ЗВУКОВ",
+  "sirenblock.save_url": "ПРОВЕРИТЬ URL",
+  "sirenblock.info": "Информация"
+}

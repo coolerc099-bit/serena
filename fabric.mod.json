@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "sirenblock",
+  "version": "${version}",
+  "name": "Siren Block",
+  "description": "Programmable siren and loudspeaker block with long-range distance attenuation.",
+  "authors": ["OpenAI"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["ru.sirenblock.SirenBlockMod"],
+    "client": ["ru.sirenblock.client.SirenBlockClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

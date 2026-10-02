@@ -1,0 +1,23 @@
+{
+  "block.sirenblock.siren": "Siren",
+  "screen.sirenblock.siren": "SIREN",
+  "sirenblock.radius": "Radius",
+  "sirenblock.inner": "Inner distance",
+  "sirenblock.volume": "Volume",
+  "sirenblock.url": "URL",
+  "sirenblock.radius_label": "Radius:",
+  "sirenblock.inner_label": "Inner distance:",
+  "sirenblock.volume_label": "Volume:",
+  "sirenblock.url_label": "URL:",
+  "sirenblock.sound_label": "Sound: %s",
+  "sirenblock.enable": "ENABLE",
+  "sirenblock.disable": "DISABLE",
+  "sirenblock.curve": "Attenuation: %s",
+  "sirenblock.loop": "Loop: %s",
+  "sirenblock.redstone": "Redstone: %s",
+  "sirenblock.apply": "SAVE",
+  "sirenblock.cancel": "CANCEL",
+  "sirenblock.import_local": "SOUND FOLDER",
+  "sirenblock.save_url": "CHECK URL",
+  "sirenblock.info": "Information"
+}
