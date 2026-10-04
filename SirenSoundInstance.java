@@ -38,8 +38,27 @@ public final class SirenSoundInstance extends AbstractTickableSoundInstance {
         this.x = pos.getX() + 0.5D;
         this.y = pos.getY() + 0.5D;
         this.z = pos.getZ() + 0.5D;
-        this.volume = 0.0F;
         this.pitch = 1.0F;
+
+        // IMPORTANT: Minecraft skips a sound that starts with volume 0 (canStartSilent() is false),
+        // so the siren would never play. Start from a small, non-zero volume instead.
+        float initial = 0.05F;
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            double dx = player.getX() - this.x;
+            double dy = player.getY() - this.y;
+            double dz = player.getZ() - this.z;
+            double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            initial = Math.max(0.02F, Math.min(0.35F, volumeFor(distance, radius)));
+        }
+        this.volume = initial;
+    }
+
+    static float volumeFor(double distance, int radius) {
+        double normalized = Math.max(0.0D, Math.min(1.0D, distance / radius));
+        double distanceFactor = 1.0D - Math.pow(normalized, 2.15D);
+        double roomTail = 0.012D * (1.0D - normalized);
+        return (float) Math.max(0.001D, Math.min(1.0D, 0.98D * distanceFactor + roomTail));
     }
 
     public boolean matches(int otherType, int otherRadius) {
@@ -73,10 +92,7 @@ public final class SirenSoundInstance extends AbstractTickableSoundInstance {
             return;
         }
 
-        double normalized = Math.max(0.0D, Math.min(1.0D, distance / radius));
-        double distanceFactor = 1.0D - Math.pow(normalized, 2.15D);
-        double roomTail = 0.012D * (1.0D - normalized);
-        double targetVolume = Math.max(0.0D, Math.min(1.0D, 0.98D * distanceFactor + roomTail));
+        double targetVolume = volumeFor(distance, radius);
 
         // A tiny attack avoids a digital click when a fresh looping instance starts.
         volume += (float) ((targetVolume - volume) * 0.22D);

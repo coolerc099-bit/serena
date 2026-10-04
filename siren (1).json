@@ -1,19 +1,6 @@
 {
-  "type": "minecraft:block",
-  "pools": [
-    {
-      "rolls": 1,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "siren_controller:siren"
-        }
-      ],
-      "conditions": [
-        {
-          "condition": "minecraft:survives_explosion"
-        }
-      ]
-    }
-  ]
+  "model": {
+    "type": "minecraft:model",
+    "model": "siren_controller:item/siren"
+  }
 }

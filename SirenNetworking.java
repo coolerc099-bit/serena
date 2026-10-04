@@ -26,8 +26,14 @@ public final class SirenNetworking {
         });
     }
 
-    public static void sendOpenScreen(ServerPlayer player, BlockPos pos) {
-        ServerPlayNetworking.send(player, new OpenSirenScreenPayload(pos));
+    /** Opens the GUI on the player's client with the current server-side state. */
+    public static void sendOpenScreen(ServerPlayer player, BlockPos pos, int type, int radius, boolean active) {
+        ServerPlayNetworking.send(player, new OpenSirenScreenPayload(pos, type, radius, active, true));
+    }
+
+    /** Refreshes an already open GUI after a button press (never opens a new screen). */
+    public static void sendScreenRefresh(ServerPlayer player, BlockPos pos, int type, int radius, boolean active) {
+        ServerPlayNetworking.send(player, new OpenSirenScreenPayload(pos, type, radius, active, false));
     }
 
     public static void broadcastState(ServerLevel level, BlockPos pos, int type, int radius, boolean active) {

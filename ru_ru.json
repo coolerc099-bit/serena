@@ -10,7 +10,7 @@
   "screen.siren_controller.type.fire": "Пожарная",
   "screen.siren_controller.type.nuclear": "Ядерная тревога",
   "screen.siren_controller.type.industrial": "Промышленная",
-  "screen.siren_controller.radius": "Дальность: %s блоков",
+  "screen.siren_controller.radius": "Дальность: %s м",
   "screen.siren_controller.radius_down": "−20",
   "screen.siren_controller.radius_up": "+20",
   "screen.siren_controller.close": "Закрыть",
@@ -19,5 +19,7 @@
   "subtitles.siren_controller.police": "Полицейская сирена",
   "subtitles.siren_controller.fire": "Пожарная сирена",
   "subtitles.siren_controller.nuclear": "Сирена ядерной тревоги",
-  "subtitles.siren_controller.industrial": "Промышленная сирена"
+  "subtitles.siren_controller.industrial": "Промышленная сирена",
+  "screen.siren_controller.radius_down_big": "−100",
+  "screen.siren_controller.radius_up_big": "+100"
 }

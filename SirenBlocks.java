@@ -47,7 +47,12 @@ public final class SirenBlocks {
     }
 
     public static void register() {
+        // Put the siren into several vanilla tabs so it is easy to find.
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.BUILDING_BLOCKS)
+                .register(entries -> entries.accept(SIREN_ITEM));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.FUNCTIONAL_BLOCKS)
+                .register(entries -> entries.accept(SIREN_ITEM));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.REDSTONE_BLOCKS)
                 .register(entries -> entries.accept(SIREN_ITEM));
     }
 }

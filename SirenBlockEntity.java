@@ -17,6 +17,14 @@ public final class SirenBlockEntity extends BlockEntity {
     public static final int MIN_RADIUS = 20;
     public static final int MAX_RADIUS = 500;
     public static final int RADIUS_STEP = 20;
+    public static final int RADIUS_BIG_STEP = 100;
+
+    public static final int ACTION_TOGGLE = 0;
+    public static final int ACTION_TYPE = 1;
+    public static final int ACTION_RADIUS_DOWN = 2;
+    public static final int ACTION_RADIUS_UP = 3;
+    public static final int ACTION_RADIUS_DOWN_BIG = 4;
+    public static final int ACTION_RADIUS_UP_BIG = 5;
 
     private int type;
     private int radius = 200;
@@ -58,13 +66,18 @@ public final class SirenBlockEntity extends BlockEntity {
         }
 
         switch (action) {
-            case 0 -> setActive(serverLevel, !active);
-            case 1 -> setType(serverLevel, (type + 1) % SirenSounds.TYPE_COUNT);
-            case 2 -> setRadius(serverLevel, radius - RADIUS_STEP);
-            case 3 -> setRadius(serverLevel, radius + RADIUS_STEP);
+            case ACTION_TOGGLE -> setActive(serverLevel, !active);
+            case ACTION_TYPE -> setType(serverLevel, (type + 1) % SirenSounds.TYPE_COUNT);
+            case ACTION_RADIUS_DOWN -> setRadius(serverLevel, radius - RADIUS_STEP);
+            case ACTION_RADIUS_UP -> setRadius(serverLevel, radius + RADIUS_STEP);
+            case ACTION_RADIUS_DOWN_BIG -> setRadius(serverLevel, radius - RADIUS_BIG_STEP);
+            case ACTION_RADIUS_UP_BIG -> setRadius(serverLevel, radius + RADIUS_BIG_STEP);
             default -> {
             }
         }
+
+        // Always answer, so the open GUI shows the real server state.
+        SirenNetworking.sendScreenRefresh(player, worldPosition, type, radius, active);
     }
 
     private void setActive(ServerLevel serverLevel, boolean value) {

@@ -1,58 +1,25 @@
 {
-  "parent": "minecraft:block/block",
-  "ambientocclusion": false,
-  "textures": {
-    "metal": "siren_controller:block/siren_metal",
-    "red": "siren_controller:block/siren_red",
-    "particle": "siren_controller:block/siren_metal"
-  },
-  "elements": [
-    {
-      "from": [2, 0, 2],
-      "to": [14, 4, 14],
-      "faces": {
-        "down": { "texture": "#metal" },
-        "up": { "texture": "#metal" },
-        "north": { "texture": "#metal" },
-        "south": { "texture": "#metal" },
-        "west": { "texture": "#metal" },
-        "east": { "texture": "#metal" }
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_iron_ingot": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          { "items": "minecraft:iron_ingot" }
+        ]
       }
     },
-    {
-      "from": [3, 4, 3],
-      "to": [13, 11, 13],
-      "faces": {
-        "down": { "texture": "#metal" },
-        "up": { "texture": "#metal" },
-        "north": { "texture": "#metal" },
-        "south": { "texture": "#metal" },
-        "west": { "texture": "#metal" },
-        "east": { "texture": "#metal" }
-      }
-    },
-    {
-      "from": [4, 11, 4],
-      "to": [12, 14, 12],
-      "faces": {
-        "down": { "texture": "#metal" },
-        "up": { "texture": "#red" },
-        "north": { "texture": "#red" },
-        "south": { "texture": "#red" },
-        "west": { "texture": "#red" },
-        "east": { "texture": "#red" }
-      }
-    },
-    {
-      "from": [5, 14, 5],
-      "to": [11, 15.5, 11],
-      "faces": {
-        "up": { "texture": "#red" },
-        "north": { "texture": "#red" },
-        "south": { "texture": "#red" },
-        "west": { "texture": "#red" },
-        "east": { "texture": "#red" }
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "siren_controller:siren"
       }
     }
-  ]
+  },
+  "requirements": [
+    [ "has_the_recipe", "has_iron_ingot" ]
+  ],
+  "rewards": {
+    "recipes": [ "siren_controller:siren" ]
+  }
 }

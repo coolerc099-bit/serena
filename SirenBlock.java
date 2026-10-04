@@ -49,8 +49,10 @@ public final class SirenBlock extends BaseEntityBlock {
             Player player,
             BlockHitResult hitResult
     ) {
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            SirenNetworking.sendOpenScreen(serverPlayer, pos);
+        if (!level.isClientSide
+                && player instanceof ServerPlayer serverPlayer
+                && level.getBlockEntity(pos) instanceof SirenBlockEntity siren) {
+            SirenNetworking.sendOpenScreen(serverPlayer, pos, siren.getType(), siren.getRadius(), siren.isActive());
         }
         return InteractionResult.SUCCESS;
     }

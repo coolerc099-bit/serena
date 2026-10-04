@@ -20,9 +20,17 @@ public final class SirenClient implements ClientModInitializer {
                     if (client.level == null) {
                         return;
                     }
-                    if (client.level.getBlockState(payload.pos()).is(SirenBlocks.SIREN)) {
-                        client.setScreenAndShow(new SirenScreen(payload.pos()));
+                    if (!client.level.getBlockState(payload.pos()).is(SirenBlocks.SIREN)) {
+                        return;
                     }
+
+                    if (client.screen instanceof SirenScreen screen && screen.isFor(payload.pos())) {
+                        screen.applyState(payload.type(), payload.radius(), payload.active());
+                    } else if (payload.open()) {
+                        client.setScreenAndShow(new SirenScreen(
+                                payload.pos(), payload.type(), payload.radius(), payload.active()));
+                    }
+                    // A refresh that arrives after the GUI was closed is ignored on purpose.
                 })
         );
 

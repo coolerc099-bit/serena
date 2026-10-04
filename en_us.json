@@ -10,7 +10,7 @@
   "screen.siren_controller.type.fire": "Fire",
   "screen.siren_controller.type.nuclear": "Nuclear alarm",
   "screen.siren_controller.type.industrial": "Industrial",
-  "screen.siren_controller.radius": "Range: %s blocks",
+  "screen.siren_controller.radius": "Range: %s m",
   "screen.siren_controller.radius_down": "−20",
   "screen.siren_controller.radius_up": "+20",
   "screen.siren_controller.close": "Close",
@@ -19,5 +19,7 @@
   "subtitles.siren_controller.police": "Police siren",
   "subtitles.siren_controller.fire": "Fire siren",
   "subtitles.siren_controller.nuclear": "Nuclear alarm siren",
-  "subtitles.siren_controller.industrial": "Industrial siren"
+  "subtitles.siren_controller.industrial": "Industrial siren",
+  "screen.siren_controller.radius_down_big": "−100",
+  "screen.siren_controller.radius_up_big": "+100"
 }
