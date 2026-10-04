@@ -1,4 +1,17 @@
 {
-  "parent": "minecraft:block/cube_all",
-  "textures": { "all": "sirenblock:block/siren" }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IRI",
+    "IGI",
+    "IRI"
+  ],
+  "key": {
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone",
+    "G": "minecraft:glass"
+  },
+  "result": {
+    "id": "siren_controller:siren",
+    "count": 1
+  }
 }

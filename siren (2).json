@@ -1,3 +1,5 @@
 {
-  "model": { "type": "minecraft:model", "model": "sirenblock:block/siren" }
+  "variants": {
+    "": { "model": "siren_controller:block/siren" }
+  }
 }

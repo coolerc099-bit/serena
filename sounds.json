@@ -1,7 +1,32 @@
 {
-  "air_raid_siren": {
+  "air_raid": {
+    "subtitle": "subtitles.siren_controller.air_raid",
     "sounds": [
-      { "name": "sirenblock:air_raid_siren", "stream": true }
+      { "name": "siren_controller:siren/air_raid", "stream": false, "preload": true }
+    ]
+  },
+  "police": {
+    "subtitle": "subtitles.siren_controller.police",
+    "sounds": [
+      { "name": "siren_controller:siren/police", "stream": false, "preload": true }
+    ]
+  },
+  "fire": {
+    "subtitle": "subtitles.siren_controller.fire",
+    "sounds": [
+      { "name": "siren_controller:siren/fire", "stream": false, "preload": true }
+    ]
+  },
+  "nuclear": {
+    "subtitle": "subtitles.siren_controller.nuclear",
+    "sounds": [
+      { "name": "siren_controller:siren/nuclear", "stream": false, "preload": true }
+    ]
+  },
+  "industrial": {
+    "subtitle": "subtitles.siren_controller.industrial",
+    "sounds": [
+      { "name": "siren_controller:siren/industrial", "stream": false, "preload": true }
     ]
   }
 }

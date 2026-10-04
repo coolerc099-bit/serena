@@ -1,137 +1,163 @@
-package ru.sirenblock.block.entity;
+package siren.controller;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
-import ru.sirenblock.SirenBlockMod;
+import org.jetbrains.annotations.Nullable;
 
 public final class SirenBlockEntity extends BlockEntity {
     public static final int MIN_RADIUS = 20;
     public static final int MAX_RADIUS = 500;
+    public static final int RADIUS_STEP = 20;
 
-    private boolean enabled = false;
+    private int type;
     private int radius = 200;
-    private int innerRadius = 20;
-    private int volume = 100;
-    private boolean loop = true;
-    private boolean redstoneControl = false;
-    private boolean remoteSync = false;
-    private int curve = 1; // 0 linear, 1 smooth, 2 exponential
-    private String soundId = "air_raid_siren";
-    private String url = "";
+    private boolean active;
+    private int syncTimer;
 
     public SirenBlockEntity(BlockPos pos, BlockState state) {
-        super(SirenBlockMod.SIREN_BE, pos, state);
+        super(SirenBlockEntities.SIREN, pos, state);
     }
 
-    public boolean enabled() { return enabled; }
-    public int radius() { return radius; }
-    public int innerRadius() { return innerRadius; }
-    public int volume() { return volume; }
-    public boolean loop() { return loop; }
-    public boolean redstoneControl() { return redstoneControl; }
-    public boolean remoteSync() { return remoteSync; }
-    public int curve() { return curve; }
-    public String soundId() { return soundId; }
-    public String url() { return url; }
-
-    public void apply(boolean enabled, int radius, int innerRadius, int volume, boolean loop,
-                      boolean redstoneControl, boolean remoteSync, int curve, String soundId, String url) {
-        this.enabled = enabled;
-        this.radius = clamp(radius, MIN_RADIUS, MAX_RADIUS);
-        this.innerRadius = clamp(innerRadius, 0, this.radius);
-        this.volume = clamp(volume, 0, 100);
-        this.loop = loop;
-        this.redstoneControl = redstoneControl;
-        this.remoteSync = remoteSync;
-        this.curve = clamp(curve, 0, 2);
-        this.soundId = sanitizeSoundId(soundId);
-        this.url = url == null ? "" : url.substring(0, Math.min(url.length(), 2048));
-        setChanged();
-        broadcast();
+    public int getType() {
+        return type;
     }
 
-    public void setEnabled(boolean value) {
-        if (this.enabled == value) return;
-        this.enabled = value;
-        setChanged();
-        broadcast();
+    public int getRadius() {
+        return radius;
     }
 
-    public void serverTick() {
-        if (level == null || level.isClientSide()) return;
-        if (redstoneControl) {
-            boolean signal = level.hasNeighborSignal(worldPosition);
-            if (signal != enabled) {
-                enabled = signal;
-                setChanged();
-                broadcast();
+    public boolean isActive() {
+        return active;
+    }
+
+    public void applyAction(ServerPlayer player, int action) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        if (player.level() != serverLevel) {
+            return;
+        }
+
+        double dx = player.getX() - (worldPosition.getX() + 0.5D);
+        double dy = player.getY() - (worldPosition.getY() + 0.5D);
+        double dz = player.getZ() - (worldPosition.getZ() + 0.5D);
+        if (dx * dx + dy * dy + dz * dz > 64.0D) {
+            return;
+        }
+        if (!serverLevel.getBlockState(worldPosition).is(SirenBlocks.SIREN)) {
+            return;
+        }
+
+        switch (action) {
+            case 0 -> setActive(serverLevel, !active);
+            case 1 -> setType(serverLevel, (type + 1) % SirenSounds.TYPE_COUNT);
+            case 2 -> setRadius(serverLevel, radius - RADIUS_STEP);
+            case 3 -> setRadius(serverLevel, radius + RADIUS_STEP);
+            default -> {
             }
         }
     }
 
-    private void broadcast() {
-        if (level != null) {
-            BlockState state = getBlockState();
-            level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_ALL);
+    private void setActive(ServerLevel serverLevel, boolean value) {
+        if (active == value) {
+            return;
         }
+
+        if (!value) {
+            SirenNetworking.broadcastState(serverLevel, worldPosition, type, radius, false);
+        }
+        active = value;
+        markAndSync(serverLevel);
+        if (value) {
+            SirenNetworking.broadcastState(serverLevel, worldPosition, type, radius, true);
+        }
+    }
+
+    private void setType(ServerLevel serverLevel, int value) {
+        value = Math.floorMod(value, SirenSounds.TYPE_COUNT);
+        if (type == value) {
+            return;
+        }
+
+        if (active) {
+            SirenNetworking.broadcastState(serverLevel, worldPosition, type, radius, false);
+        }
+        type = value;
+        markAndSync(serverLevel);
+        if (active) {
+            SirenNetworking.broadcastState(serverLevel, worldPosition, type, radius, true);
+        }
+    }
+
+    private void setRadius(ServerLevel serverLevel, int value) {
+        value = Math.max(MIN_RADIUS, Math.min(MAX_RADIUS, value));
+        if (radius == value) {
+            return;
+        }
+
+        if (active) {
+            SirenNetworking.broadcastState(serverLevel, worldPosition, type, radius, false);
+        }
+        radius = value;
+        markAndSync(serverLevel);
+        if (active) {
+            SirenNetworking.broadcastState(serverLevel, worldPosition, type, radius, true);
+        }
+    }
+
+    private void markAndSync(ServerLevel serverLevel) {
+        setChanged();
+        serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, SirenBlockEntity entity) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        if (!state.is(SirenBlocks.SIREN)) {
+            if (entity.active) {
+                entity.active = false;
+            }
+            return;
+        }
+        if (!entity.active) {
+            return;
+        }
+
+        if (++entity.syncTimer < 10) {
+            return;
+        }
+        entity.syncTimer = 0;
+        SirenNetworking.broadcastState(serverLevel, pos, entity.type, entity.radius, true);
     }
 
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-        output.putBoolean("Enabled", enabled);
+        output.putInt("Type", type);
         output.putInt("Radius", radius);
-        output.putInt("InnerRadius", innerRadius);
-        output.putInt("Volume", volume);
-        output.putBoolean("Loop", loop);
-        output.putBoolean("RedstoneControl", redstoneControl);
-        output.putBoolean("RemoteSync", remoteSync);
-        output.putInt("Curve", curve);
-        output.putString("SoundId", soundId);
-        output.putString("Url", url);
+        output.putBoolean("Active", active);
     }
 
     @Override
     protected void loadAdditional(ValueInput input) {
         super.loadAdditional(input);
-        enabled = input.getBooleanOr("Enabled", false);
-        radius = clamp(input.getIntOr("Radius", 200), MIN_RADIUS, MAX_RADIUS);
-        innerRadius = clamp(input.getIntOr("InnerRadius", 20), 0, radius);
-        volume = clamp(input.getIntOr("Volume", 100), 0, 100);
-        loop = input.getBooleanOr("Loop", true);
-        redstoneControl = input.getBooleanOr("RedstoneControl", false);
-        remoteSync = input.getBooleanOr("RemoteSync", false);
-        curve = clamp(input.getIntOr("Curve", 1), 0, 2);
-        soundId = sanitizeSoundId(input.getStringOr("SoundId", "air_raid_siren"));
-        url = input.getStringOr("Url", "");
+        type = Math.floorMod(input.getIntOr("Type", 0), SirenSounds.TYPE_COUNT);
+        radius = Math.max(MIN_RADIUS, Math.min(MAX_RADIUS, input.getIntOr("Radius", 200)));
+        active = input.getBooleanOr("Active", false);
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getUpdatePacket() {
+    public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
-    }
-
-    private static int clamp(int v, int min, int max) {
-        return Math.max(min, Math.min(max, v));
-    }
-
-    private static String sanitizeSoundId(String value) {
-        if (value == null || value.isBlank()) return "air_raid_siren";
-        return value.length() > 128 ? value.substring(0, 128) : value;
     }
 }

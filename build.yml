@@ -1,0 +1,55 @@
+name: Build Siren Controller
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Verify project contains no stub classes
+        shell: bash
+        run: |
+          if grep -R --line-number -E 'package net\.minecraft|package net\.fabricmc' src/main src/client 2>/dev/null; then
+            echo 'Stub Minecraft/Fabric classes found in source tree.'
+            exit 1
+          fi
+          test -f fabric.mod.json
+          test -f build.gradle
+          test -f src/main/resources/assets/siren_controller/sounds.json
+
+      - name: Build with Fabric Loom
+        run: gradle build --no-daemon --stacktrace
+
+      - name: Upload mod jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: siren-controller-mc26.3
+          path: build/libs/siren_controller-mc26.3-2.0.0.jar
+          if-no-files-found: error
+
+      - name: Upload source jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: siren-controller-sources
+          path: build/libs/*-sources.jar
+          if-no-files-found: error

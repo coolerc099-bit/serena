@@ -1,46 +1,101 @@
-# Siren Block для Minecraft Java 26.3 / Fabric
+# Siren Controller для Minecraft 26.3 + Fabric
 
-## Что есть
-- Блок **«Сирена»**.
-- ПКМ открывает ванильный по стилю интерфейс.
-- Радиус слышимости **20–500 блоков**, по умолчанию 200.
-- Внутри минимальной дистанции звук максимальный.
-- Дальше начинается плавное затухание до почти нуля на границе радиуса.
-- Три кривые: линейная, плавная, экспоненциальная.
-- Громкость 0–100%.
-- Loop.
-- Управление редстоун-сигналом.
-- Встроенный оригинальный сгенерированный звук воздушной сирены.
-- Сохранение настроек каждой сирены в мире.
-- Сервер/client networking для настроек.
+Полный исходный проект мода без самодельных Minecraft/Fabric stub-классов.
+Сборка выполняется через Fabric Loom против настоящего `com.mojang:minecraft:26.3`.
 
-## Требования
-- Minecraft Java Edition **26.3**
-- Fabric Loader **0.19.5+**
-- Fabric API **0.161.0+26.3**
-- Java **25+**
+## Что делает мод
 
-## Сборка
-Официальный Fabric-шаблон для 26.3 использует Loom 1.18-SNAPSHOT, Java 25 и Fabric API 0.161.0+26.3.
-Открой проект как Gradle-проект и выполни:
+- Добавляет отдельный блок `Сирена`.
+- ПКМ по блоку открывает GUI.
+- Команды не нужны.
+- Сервер хранит настройки в `SirenBlockEntity`.
+- Настройки: включение, тип и дальность.
+- Дальность: 20–500 блоков, шаг 20.
+- Типы: воздушная тревога, полиция, пожарная, ядерная тревога, промышленная.
+- Клиент получает состояние через custom payload и проигрывает настоящий looping `SoundInstance`.
+- Звук автоматически останавливается при выключении, удалении блока, уходе за радиус или смене измерения.
+- Блок есть в творческой вкладке Building Blocks.
+- Для блока есть loot table, рецепт и теги `minecraft:mineable/pickaxe` + `minecraft:needs_stone_tool`.
 
-`gradlew build`
+## Важная поправка по `codec()`
 
-## Установка
-После сборки файл появится в `build/libs/`.
-Положи `sirenblock-1.0.0.jar` в `.minecraft/mods`.
+В Minecraft 26.3 `Block#codec()` и реестр block codecs были удалены в рамках технических изменений 26.x. Поэтому `SirenBlock` **намеренно не содержит** `codec()` и `MapCodec`. Добавлять их в 26.3 было бы ошибкой.
 
-## Пользовательские звуки
-В текущей версии проекта встроенная сирена работает сразу.
-Для своих OGG мод создаёт/использует папку:
+## Почему нет статической Map с конфигом
 
-`.minecraft/config/sirenblock/sounds/`
+Состояние сирены принадлежит конкретному `SirenBlockEntity`, а значит автоматически принадлежит конкретному `ServerLevel`. Никакого глобального ключа `x,y,z` для настроек нет.
 
-Прямая ссылка на `.ogg` сохраняется в настройках. Обычная страница SoundCloud не является прямым аудиофайлом, поэтому сам URL SoundCloud не обещает воспроизведение. Для полностью надёжной пользовательской музыки используй `.ogg`.
+На клиенте карта запущенных звуков использует пару `(dimension, BlockPos.asLong())`, поэтому одинаковые координаты в разных измерениях не конфликтуют.
 
+## Звук
 
-## Статус сборки в этой среде
+Файлы генерируются скриптом `tools/generate_audio.py` методом детерминированного additive synthesis:
 
-Исходники проекта подготовлены под Minecraft 26.3 / Fabric как Gradle-проект. Финальный `.jar` в этой среде не собирался: здесь доступен JDK 21, а актуальный шаблон Fabric для 26.3 требует Java 25. Перед использованием собери проект локально через Gradle/IntelliJ IDEA на JDK 25.
+- 48 kHz;
+- stereo;
+- 8 секунд на цикл;
+- плавные sinusoidal frequency sweeps;
+- гармоники;
+- мягкая нелинейная сатурация без hard clipping;
+- 18 ms seam crossfade для близкого совпадения начала/конца файла;
+- кодирование в OGG/Vorbis quality 6 через FFmpeg.
 
-Важно: встроенная сирена и плавное дистанционное затухание реализованы в исходниках. Полноценный импорт произвольных треков по обычной ссылке SoundCloud в эту версию проекта не включён: URL хранится в настройках как задел, но воспроизведение использует встроенную сирену.
+Это синтетические сирены, а не сэмплы чужих записей. Каждый тип имеет собственную частотную структуру и характер модуляции.
+
+Сами OGG уже лежат в репозитории, поэтому GitHub Actions не должен запускать генератор звука для обычной сборки.
+
+## Структура проекта
+
+```text
+build.gradle
+gradle.properties
+settings.gradle
+fabric.mod.json
+.github/workflows/build.yml
+src/main/java/...
+src/client/java/...
+src/main/resources/...
+tools/generate_audio.py
+```
+
+Используется split environment source sets из Fabric Loom, поэтому client-only классы GUI и sound instance не загружаются как common-код сервера.
+
+## Сборка в GitHub Actions
+
+1. Создай пустой GitHub repository.
+2. Загрузи **все файлы проекта** в repository.
+3. Сделай push в `main`.
+4. Открой GitHub → **Actions** → **Build Siren Controller**.
+5. После завершения открой run → **Artifacts**.
+6. Скачай `siren-controller-mc26.3`.
+7. Внутри будет обычный mod JAR из `build/libs`.
+
+Workflow автоматически ставит JDK 25 и Gradle 9.6.0.
+
+## Локальная сборка
+
+Локально нужен JDK 25. Пользовательский ПК не обязан иметь его, если сборка идёт через GitHub Actions.
+
+```bash
+gradle build --no-daemon --stacktrace
+```
+
+## Проверяемые 26.3 API
+
+Критические места проекта намеренно сделаны по API ветки Fabric 26.3:
+
+- `ResourceKey.create(Registries.BLOCK/ITEM, Identifier)` + `Registry.register(BuiltInRegistries..., key, value)`;
+- `BlockBehaviour.Properties.of().setId(...).strength(...).requiresCorrectToolForDrops().sound(...).noOcclusion()`;
+- `BlockEntityType.Builder.of(...).build(null)`;
+- `ValueInput` / `ValueOutput` для BlockEntity storage;
+- `PayloadTypeRegistry.serverboundPlay()` / `clientboundPlay()`;
+- `BlockPos.STREAM_CODEC` + `ByteBufCodecs` + `StreamCodec.composite(...)`;
+- `Minecraft.level` как `ClientLevel`;
+- `Minecraft.setScreenAndShow(Screen)` для открытия GUI;
+- `AbstractTickableSoundInstance` + `looping = true` для бесшовного циклического SoundInstance.
+
+## Ограничение проверки
+
+В этой среде нет установленного JDK 25, Gradle и локальной копии Minecraft 26.3, а исходящие сетевые запросы контейнера недоступны. Поэтому здесь нельзя честно заявить, что `gradle build` был реально выполнен на полном Minecraft 26.3 runtime.
+
+Файл проекта, однако, специально настроен так, чтобы GitHub Actions скачал реальные зависимости через Fabric Loom и **не использовал самодельные stub-классы**.

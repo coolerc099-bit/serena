@@ -1,32 +1,49 @@
-package ru.sirenblock.network;
+package siren.controller;
 
-import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import ru.sirenblock.SirenBlockMod;
-import ru.sirenblock.block.entity.SirenBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import siren.controller.network.OpenSirenScreenPayload;
+import siren.controller.network.SirenActionPayload;
+import siren.controller.network.SirenStatePayload;
 
 public final class SirenNetworking {
-    private SirenNetworking() {}
+    private SirenNetworking() {
+    }
 
     public static void registerCommon() {
+        PayloadTypeRegistry.serverboundPlay().register(SirenActionPayload.TYPE, SirenActionPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(OpenSirenScreenPayload.TYPE, OpenSirenScreenPayload.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(SirenUpdatePayload.TYPE, SirenUpdatePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SirenStatePayload.TYPE, SirenStatePayload.CODEC);
 
-        ServerPlayNetworking.registerGlobalReceiver(SirenUpdatePayload.TYPE, (payload, context) -> {
-            var player = context.player();
-            if (player.level().dimension() != player.level().dimension()) return;
-            if (!player.blockPosition().closerThan(payload.pos(), 8.0)) return;
-            if (player.level().getBlockEntity(payload.pos()) instanceof SirenBlockEntity be) {
-                be.apply(payload.enabled(), payload.radius(), payload.innerRadius(), payload.volume(), payload.loop(),
-                        payload.redstoneControl(), payload.remoteSync(), payload.curve(), payload.soundId(), payload.url());
+        ServerPlayNetworking.registerGlobalReceiver(SirenActionPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            if (player.level().getBlockEntity(payload.pos()) instanceof SirenBlockEntity siren) {
+                siren.applyAction(player, payload.action());
             }
         });
     }
 
-    public static void registerClientReceiver() {
-        ClientPlayNetworking.registerGlobalReceiver(OpenSirenScreenPayload.TYPE, (payload, context) ->
-                context.client().execute(() -> context.client().setScreen(new ru.sirenblock.client.SirenScreen(payload)))
-        );
+    public static void sendOpenScreen(ServerPlayer player, BlockPos pos) {
+        ServerPlayNetworking.send(player, new OpenSirenScreenPayload(pos));
+    }
+
+    public static void broadcastState(ServerLevel level, BlockPos pos, int type, int radius, boolean active) {
+        double cx = pos.getX() + 0.5D;
+        double cy = pos.getY() + 0.5D;
+        double cz = pos.getZ() + 0.5D;
+        double maxDistanceSq = (double) radius * radius;
+        SirenStatePayload payload = new SirenStatePayload(pos, type, radius, active);
+
+        for (ServerPlayer player : level.players()) {
+            double dx = player.getX() - cx;
+            double dy = player.getY() - cy;
+            double dz = player.getZ() - cz;
+            if (dx * dx + dy * dy + dz * dz <= maxDistanceSq) {
+                ServerPlayNetworking.send(player, payload);
+            }
+        }
     }
 }

@@ -1,128 +1,148 @@
-package ru.sirenblock.client;
+package siren.controller.client;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import net.minecraft.client.Minecraft;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 import net.minecraft.core.BlockPos;
-import ru.sirenblock.network.OpenSirenScreenPayload;
-import ru.sirenblock.network.SirenUpdatePayload;
-import net.fabricmc.fabric.api.networking.v1.ClientPlayNetworking;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import siren.controller.SirenBlockEntity;
+import siren.controller.network.SirenActionPayload;
 
 public final class SirenScreen extends Screen {
     private final BlockPos pos;
-    private boolean enabled, loop, redstone, remote;
-    private int radius, inner, volume, curve;
-    private String soundId, url;
-    private EditBox radiusBox, innerBox, volumeBox, urlBox;
-    private Button powerButton;
+    private Button toggleButton;
+    private Button typeButton;
+    private Button radiusDownButton;
+    private Button radiusUpButton;
 
-    public SirenScreen(OpenSirenScreenPayload data) {
-        super(Component.translatable("screen.sirenblock.siren"));
-        this.pos = data.pos();
-        this.enabled = data.enabled();
-        this.radius = data.radius();
-        this.inner = data.innerRadius();
-        this.volume = data.volume();
-        this.loop = data.loop();
-        this.redstone = data.redstoneControl();
-        this.remote = data.remoteSync();
-        this.curve = data.curve();
-        this.soundId = data.soundId();
-        this.url = data.url();
+    public SirenScreen(BlockPos pos) {
+        super(Component.translatable("screen.siren_controller.title"));
+        this.pos = pos.immutable();
+    }
+
+    private SirenBlockEntity entity() {
+        if (minecraft.level == null) {
+            return null;
+        }
+        BlockEntity entity = minecraft.level.getBlockEntity(pos);
+        return entity instanceof SirenBlockEntity siren ? siren : null;
     }
 
     @Override
     protected void init() {
-        super.init();
-        int left = this.width / 2 - 160;
-        int top = this.height / 2 - 110;
+        int panelW = 320;
+        int left = (width - panelW) / 2;
+        int top = (height - 210) / 2;
 
-        radiusBox = addRenderableWidget(new EditBox(this.font, left + 82, top + 28, 80, 20, Component.translatable("sirenblock.radius")));
-        radiusBox.setValue(Integer.toString(radius));
-        innerBox = addRenderableWidget(new EditBox(this.font, left + 82, top + 55, 80, 20, Component.translatable("sirenblock.inner")));
-        innerBox.setValue(Integer.toString(inner));
-        volumeBox = addRenderableWidget(new EditBox(this.font, left + 82, top + 82, 80, 20, Component.translatable("sirenblock.volume")));
-        volumeBox.setValue(Integer.toString(volume));
-        urlBox = addRenderableWidget(new EditBox(this.font, left + 82, top + 109, 215, 20, Component.translatable("sirenblock.url")));
-        urlBox.setValue(url);
+        toggleButton = addRenderableWidget(Button.builder(toggleText(), button -> send(0))
+                .bounds(left, top + 42, panelW, 20)
+                .build());
 
-        powerButton = addRenderableWidget(Button.builder(Component.empty(), b -> { enabled = !enabled; updatePowerText(); }).bounds(left, top, 150, 20).build());
-        updatePowerText();
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.curve", curveName()), b -> { curve = (curve + 1) % 3; b.setMessage(Component.translatable("sirenblock.curve", curveName())); }).bounds(left + 165, top + 28, 135, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.loop", loop ? "ON" : "OFF"), b -> { loop = !loop; b.setMessage(Component.translatable("sirenblock.loop", loop ? "ON" : "OFF")); }).bounds(left + 165, top + 55, 135, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.redstone", redstone ? "ON" : "OFF"), b -> { redstone = !redstone; b.setMessage(Component.translatable("sirenblock.redstone", redstone ? "ON" : "OFF")); }).bounds(left + 165, top + 82, 135, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.apply"), b -> saveAndClose()).bounds(left, top + 145, 145, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.cancel"), b -> onClose()).bounds(left + 155, top + 145, 145, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.import_local"), b -> importLocalOgg()).bounds(left, top + 173, 145, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("sirenblock.save_url"), b -> { saveUrlHint(); }).bounds(left + 155, top + 173, 145, 20).build());
+        typeButton = addRenderableWidget(Button.builder(typeText(), button -> send(1))
+                .bounds(left, top + 76, panelW, 20)
+                .build());
+
+        radiusDownButton = addRenderableWidget(Button.builder(
+                        Component.translatable("screen.siren_controller.radius_down"),
+                        button -> send(2))
+                .bounds(left, top + 110, 42, 20)
+                .build());
+
+        radiusUpButton = addRenderableWidget(Button.builder(
+                        Component.translatable("screen.siren_controller.radius_up"),
+                        button -> send(3))
+                .bounds(left + panelW - 42, top + 110, 42, 20)
+                .build());
+
+        addRenderableWidget(Button.builder(
+                        Component.translatable("screen.siren_controller.close"),
+                        button -> onClose())
+                .bounds(left, top + 158, panelW, 20)
+                .build());
     }
 
-    private void updatePowerText() {
-        powerButton.setMessage(Component.translatable(enabled ? "sirenblock.disable" : "sirenblock.enable"));
+    private Component toggleText() {
+        SirenBlockEntity e = entity();
+        return Component.translatable(e != null && e.isActive()
+                ? "screen.siren_controller.disable"
+                : "screen.siren_controller.enable");
     }
 
-    private String curveName() {
-        return switch (curve) { case 0 -> "Линейное"; case 2 -> "Экспоненциальное"; default -> "Плавное"; };
+    private Component typeText() {
+        SirenBlockEntity e = entity();
+        int type = e == null ? 0 : e.getType();
+        return Component.translatable(
+                "screen.siren_controller.type",
+                Component.translatable("screen.siren_controller.type." + typeName(type))
+        );
     }
 
-    private void parseFields() {
-        radius = Mth.clamp(parseInt(radiusBox.getValue(), 200), 20, 500);
-        inner = Mth.clamp(parseInt(innerBox.getValue(), 20), 0, radius);
-        volume = Mth.clamp(parseInt(volumeBox.getValue(), 100), 0, 100);
-        url = urlBox.getValue().trim();
+    private static String typeName(int type) {
+        return switch (Math.floorMod(type, 5)) {
+            case 0 -> "air_raid";
+            case 1 -> "police";
+            case 2 -> "fire";
+            case 3 -> "nuclear";
+            default -> "industrial";
+        };
     }
 
-    private int parseInt(String v, int def) {
-        try { return Integer.parseInt(v.trim()); } catch (NumberFormatException e) { return def; }
-    }
-
-    private void saveAndClose() {
-        parseFields();
-        ClientPlayNetworking.send(new SirenUpdatePayload(pos, enabled, radius, inner, volume, loop, redstone, remote, curve, soundId, url));
-        onClose();
-    }
-
-    private void saveUrlHint() {
-        parseFields();
-        this.minecraft.gui.setScreen(new MessageScreen(this, "Ссылка сохранена. Для прямого аудиопотока используй URL на .ogg. Обычная страница SoundCloud не является прямым аудиофайлом."));
-    }
-
-    private void importLocalOgg() {
-        try {
-            Path dir = Minecraft.getInstance().gameDirectory.toPath().resolve("config").resolve("sirenblock").resolve("sounds");
-            Files.createDirectories(dir);
-            this.minecraft.gui.setScreen(new MessageScreen(this, "Папка для пользовательских OGG создана:\n" + dir.toAbsolutePath() + "\n\nПоложи туда .ogg-файл. Он будет подключаться как пользовательский звук после перезагрузки ресурсов."));
-        } catch (IOException ignored) {}
+    private void send(int action) {
+        if (minecraft.player != null) {
+            ClientPlayNetworking.send(new SirenActionPayload(pos, action));
+        }
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(g, mouseX, mouseY, partialTick);
-        int left = this.width / 2 - 160;
-        int top = this.height / 2 - 110;
-        g.fill(left - 8, top - 18, left + 308, top + 205, 0xE0101010);
-        g.centeredText(this.font, this.title, this.width / 2, top - 8, 0xFFFFFFFF);
-        g.text(this.font, Component.translatable("sirenblock.radius_label"), left, top + 34, 0xFFB0B0B0);
-        g.text(this.font, Component.translatable("sirenblock.inner_label"), left, top + 61, 0xFFB0B0B0);
-        g.text(this.font, Component.translatable("sirenblock.volume_label"), left, top + 88, 0xFFB0B0B0);
-        g.text(this.font, Component.translatable("sirenblock.url_label"), left, top + 115, 0xFFB0B0B0);
-        g.text(this.font, Component.translatable("sirenblock.sound_label", "Воздушная тревога"), left, top + 132, 0xFFB0B0B0);
+    public void tick() {
+        super.tick();
+        if (entity() == null) {
+            onClose();
+            return;
+        }
+
+        toggleButton.setMessage(toggleText());
+        typeButton.setMessage(typeText());
+        SirenBlockEntity e = entity();
+        int radius = e.getRadius();
+        radiusDownButton.active = radius > SirenBlockEntity.MIN_RADIUS;
+        radiusUpButton.active = radius < SirenBlockEntity.MAX_RADIUS;
     }
 
-    @Override public void onClose() { this.minecraft.gui.setScreen(null); }
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
-    private static final class MessageScreen extends Screen {
-        private final Screen parent;
-        private final String message;
-        MessageScreen(Screen parent, String message) { super(Component.translatable("sirenblock.info")); this.parent = parent; this.message = message; }
-        @Override protected void init() { addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> minecraft.gui.setScreen(parent)).bounds(width / 2 - 60, height - 45, 120, 20).build()); }
-        @Override public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float a) { super.extractRenderState(g, mx, my, a); g.centeredText(font, title, width / 2, 40, -1); int y = 70; for (String line : message.split("\\n")) { g.centeredText(font, line, width / 2, y, 0xFFBBBBBB); y += 12; } }
+        SirenBlockEntity e = entity();
+        int panelW = 320;
+        int left = (width - panelW) / 2;
+        int top = (height - 210) / 2;
+        Font font = this.font;
+
+        graphics.text(font, Component.translatable("screen.siren_controller.title"), left, top, 0xFFFFFFFF);
+        int radius = e == null ? SirenBlockEntity.MIN_RADIUS : e.getRadius();
+        graphics.text(font,
+                Component.translatable("screen.siren_controller.radius", radius),
+                left + 42,
+                top + 116,
+                0xFFE0E0E0);
+        graphics.text(font,
+                Component.translatable("screen.siren_controller.position", pos.getX(), pos.getY(), pos.getZ()),
+                left,
+                top + 195,
+                0xFF888888);
+    }
+
+    @Override
+    public void onClose() {
+        minecraft.setScreen(null);
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
     }
 }

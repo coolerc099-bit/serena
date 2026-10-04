@@ -1,15 +1,16 @@
 {
   "schemaVersion": 1,
-  "id": "sirenblock",
+  "id": "siren_controller",
   "version": "${version}",
-  "name": "Siren Block",
-  "description": "Programmable siren and loudspeaker block with long-range distance attenuation.",
-  "authors": ["OpenAI"],
+  "name": "Siren Controller",
+  "description": "Настраиваемый блок сирены с серверным хранением, GUI и дальностью 20–500 блоков.",
+  "authors": ["Kostya"],
   "license": "MIT",
+  "icon": "assets/siren_controller/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": ["ru.sirenblock.SirenBlockMod"],
-    "client": ["ru.sirenblock.client.SirenBlockClient"]
+    "main": ["siren.controller.SirenMod"],
+    "client": ["siren.controller.client.SirenClient"]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
