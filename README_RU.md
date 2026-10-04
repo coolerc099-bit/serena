@@ -52,7 +52,7 @@
 build.gradle
 gradle.properties
 settings.gradle
-fabric.mod.json
+src/main/resources/fabric.mod.json
 .github/workflows/build.yml
 src/main/java/...
 src/client/java/...
@@ -109,3 +109,7 @@ gradle build --no-daemon --stacktrace
 - Блок добавлен в три творческие вкладки.
 - GUI переписан: единая колонка шириной 260, все кнопки высотой 20, всё по центру, добавлены кнопки ±100. Состояние приходит от сервера в пакете (больше не зависит от клиентского BlockEntity), после каждой кнопки GUI обновляется ответом сервера.
 - Звук: экземпляр больше не стартует с громкостью 0 (Minecraft пропускает такие звуки, и сирена молчала).
+
+## Изменения 2.0.2
+
+- Критическая правка сборки: `fabric.mod.json` лежал в корне проекта, а не в `src/main/resources`, поэтому не попадал в jar. Fabric считал файл обычной библиотекой («non-fabric mod») и не запускал мод. Файл перенесён в `src/main/resources/`.
